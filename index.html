@@ -121,6 +121,42 @@ $(document).ready(function () {
 <p>Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. We have data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website <a href="http://groupware.les.inf.puc-rio.br/har">here</a> (see the section on the Weight Lifting Exercise Dataset).<br />
 In this project, our goal is to predict the manner in which they did the exercise. The outcome of the prediction is the “classe” variable having 5 factors- “A”,“B”,“C”,“D”&amp;“E”, that denote the quality of the excersice being performed.</p>
 </div>
+<div id="prediction-study-design" class="section level3">
+<h3><strong>Prediction Study Design</strong></h3>
+<p>Loading required packages, setting seed, and loading training &amp; testing data</p>
+<pre class="r"><code>library(caret)
+library(dplyr)
+set.seed(55)
+data &lt;- read.csv(&quot;pml-training.csv&quot;)
+testdata &lt;- read.csv(&quot;pml-testing.csv&quot;)</code></pre>
+<p>The “testdata” will be used to make prediction by our final algorithm. The “data” which is our training data is partitioned into 3 different data sets as follows-</p>
+<pre class="r"><code>inTrain &lt;- createDataPartition(y=data$classe, p=0.8, list = F)
+train_test &lt;- data[inTrain,]
+validation &lt;- data[-inTrain,]
+inTrain &lt;- createDataPartition(y=train_test$classe, p=0.8, list = F)
+training &lt;- train_test[inTrain,]
+testing &lt;- train_test[-inTrain,]</code></pre>
+<p>Partioning accomplishes 3 objectives</p>
+<ul>
+<li>training set used to train different machine learning algorithms</li>
+<li>testing set used to test different algorithms to select the best one and then calculate the in-sample error rate.</li>
+<li>validation set used to test our final algorithm and calculate out of sample error rate.</li>
+</ul>
+</div>
+<div id="cleaning-data" class="section level2">
+<h2><strong>Cleaning Data</strong></h2>
+<p>Now, we start working with our training dataset.<br />
+On exploring our dataset we find out that out of the 12,562 rows, 67 variables have 12,291 NAs and another 33 variables have 12,291 missing values in the form of “”. These variables obviously cannot be used for model building and thus need to be removed from our training dataset. Also the 1st varible “X” indicating the row number is removed.</p>
+<pre class="r"><code>x &lt;- sapply(training, function(x) sum(is.na(x)))
+x &lt;- x[x&gt;0]
+x &lt;- match(names(x),names(training))
+training &lt;- dplyr::select(training, -x)
+x &lt;- sapply(training, function(x) sum(x%in%&quot;&quot;))
+x &lt;- x[x&gt;0]
+x &lt;- match(names(x),names(training))
+training &lt;- dplyr::select(training, -x)
+training &lt;- training[,-1]</code></pre>
+</div>
 
 
 
