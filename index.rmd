@@ -55,4 +55,49 @@ training <- dplyr::select(training, -x)
 training <- training[,-1]
 ```
 
+##**Model Building**  
+Thus, we have 58 features to build different models to predict the outcome that is the "classe" variable. Since the outcome of our prediction is multinomial classification, we use 3 different machine learning algorithms namely, "recursice partioning & regression trees(rpart)", "linear discriminant analysis", and "random forests" to build our models, these models will be subsequently tested on testing dataset to calculate the in-sample error rate.
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(parallel)
+library(doParallel)
+cluster <- makeCluster(detectCores() - 1)
+registerDoParallel(cluster)
+```
+```{r, cache=TRUE, warning=FALSE, message=FALSE}
+fitControl <- trainControl(method = "cv", number = 10, allowParallel = TRUE)
+fit1 <- train(classe~., data = training, method= "rpart")
+fit2 <- train(classe~., data = training, method= "lda")
+fit3 <- train(classe~., data= training, method="rf", trControl= fitControl)
+```
+In random forests, the cross validation method used is k-fold instead of the default option of boosting. This is done to increase the computational efficiency by slightly sacrificing model accuracy 
+```{r, echo=FALSE}
+stopCluster(cluster)
+```
+Applying our model fits to the tesing dataset we calculate the in-sample error rate for each model.
+```{r, message=FALSE, warning=FALSE}
+pred1 <- predict(fit1, newdata= testing)
+confusionMatrix(pred1, testing$classe)$overall
+pred2 <- predict(fit2, newdata= testing)
+confusionMatrix(pred2, testing$classe)$overall
+pred3 <- predict(fit3, newdata= testing)
+confusionMatrix(pred3, testing$classe)$overall
+```
+Thus we can see that the accuracies for model 1, model 2 and model 3 are 49.95%, 86.4% and 99.9% respectively. Model 3 ie the "random forests" gives us the best accuracy and eliminates the need to build further models. 
+
+Now let us look at the cross-validation performed by the train function for the random forest method
+```{r}
+fit3$resample
+```
+Since we had selected the number of k-folds to be 10, the train function does cross validation 10 times, each time generating an in-sample error rate. This error rate appears to be in the range of 0-0.25% which is well within our acceptable range.
+
+Thus we select modelfit3 as our final model to predict the "classe" variable.
+
+
+##**Validation & Calculating out of sample error rate**  
+Now we must test our model fit just once, on the validation dataset to calculate the out of sample error.
+```{r}
+finalprediction <- predict(fit3, newdata= validation)
+confusionMatrix(finalprediction, validation$classe)
+```
+Thus we can see that the out of sample error also comes to about 0.01% which proves the fact that the model is capable of making very accurate predictions.
 

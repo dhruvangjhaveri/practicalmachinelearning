@@ -157,6 +157,88 @@ x &lt;- match(names(x),names(training))
 training &lt;- dplyr::select(training, -x)
 training &lt;- training[,-1]</code></pre>
 </div>
+<div id="model-building" class="section level2">
+<h2><strong>Model Building</strong></h2>
+<p>Thus, we have 58 features to build different models to predict the outcome that is the “classe” variable. Since the outcome of our prediction is multinomial classification, we use 3 different machine learning algorithms namely, “recursice partioning &amp; regression trees(rpart)”, “linear discriminant analysis”, and “random forests” to build our models, these models will be subsequently tested on testing dataset to calculate the in-sample error rate.</p>
+<pre class="r"><code>fitControl &lt;- trainControl(method = &quot;cv&quot;, number = 10, allowParallel = TRUE)
+fit1 &lt;- train(classe~., data = training, method= &quot;rpart&quot;)
+fit2 &lt;- train(classe~., data = training, method= &quot;lda&quot;)
+fit3 &lt;- train(classe~., data= training, method=&quot;rf&quot;, trControl= fitControl)</code></pre>
+<p>In random forests, the cross validation method used is k-fold instead of the default option of boosting. This is done to increase the computational efficiency by slightly sacrificing model accuracy</p>
+<p>Applying our model fits to the tesing dataset we calculate the in-sample error rate for each model.</p>
+<pre class="r"><code>pred1 &lt;- predict(fit1, newdata= testing)
+confusionMatrix(pred1, testing$classe)$overall</code></pre>
+<pre><code>##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
+##   4.902773e-01   3.612881e-01   4.726403e-01   5.079325e-01   2.843481e-01 
+## AccuracyPValue  McnemarPValue 
+##  1.406791e-130            NaN</code></pre>
+<pre class="r"><code>pred2 &lt;- predict(fit2, newdata= testing)
+confusionMatrix(pred2, testing$classe)$overall</code></pre>
+<pre><code>##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
+##      0.8594198      0.8222764      0.8467620      0.8714033      0.2843481 
+## AccuracyPValue  McnemarPValue 
+##      0.0000000            NaN</code></pre>
+<pre class="r"><code>pred3 &lt;- predict(fit3, newdata= testing)
+confusionMatrix(pred3, testing$classe)$overall</code></pre>
+<pre><code>##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
+##      0.9980873      0.9975807      0.9958416      0.9992978      0.2843481 
+## AccuracyPValue  McnemarPValue 
+##      0.0000000            NaN</code></pre>
+<p>Thus we can see that the accuracies for model 1, model 2 and model 3 are 49.95%, 86.4% and 99.9% respectively. Model 3 ie the “random forests” gives us the best accuracy and eliminates the need to build further models.</p>
+<p>Now let us look at the cross-validation performed by the train function for the random forest method</p>
+<pre class="r"><code>fit3$resample</code></pre>
+<pre><code>##     Accuracy     Kappa Resample
+## 1  0.9992045 0.9989938   Fold02
+## 2  0.9992045 0.9989936   Fold01
+## 3  1.0000000 1.0000000   Fold04
+## 4  0.9984076 0.9979859   Fold03
+## 5  0.9984076 0.9979860   Fold06
+## 6  1.0000000 1.0000000   Fold05
+## 7  0.9984089 0.9979877   Fold08
+## 8  0.9992045 0.9989936   Fold07
+## 9  0.9976115 0.9969784   Fold10
+## 10 0.9984051 0.9979825   Fold09</code></pre>
+<p>Since we had selected the number of k-folds to be 10, the train function does cross validation 10 times, each time generating an in-sample error rate. This error rate appears to be in the range of 0-0.25% which is well within our acceptable range.</p>
+<p>Thus we select modelfit3 as our final model to predict the “classe” variable.</p>
+</div>
+<div id="validation-calculating-out-of-sample-error-rate" class="section level2">
+<h2><strong>Validation &amp; Calculating out of sample error rate</strong></h2>
+<p>Now we must test our model fit just once, on the validation dataset to calculate the out of sample error.</p>
+<pre class="r"><code>finalprediction &lt;- predict(fit3, newdata= validation)
+confusionMatrix(finalprediction, validation$classe)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1116    0    0    0    0
+##          B    0  759    1    0    0
+##          C    0    0  682    1    0
+##          D    0    0    1  641    0
+##          E    0    0    0    1  721
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.999           
+##                  95% CI : (0.9974, 0.9997)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9987          
+##  Mcnemar's Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            1.0000   1.0000   0.9971   0.9969   1.0000
+## Specificity            1.0000   0.9997   0.9997   0.9997   0.9997
+## Pos Pred Value         1.0000   0.9987   0.9985   0.9984   0.9986
+## Neg Pred Value         1.0000   1.0000   0.9994   0.9994   1.0000
+## Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
+## Detection Rate         0.2845   0.1935   0.1738   0.1634   0.1838
+## Detection Prevalence   0.2845   0.1937   0.1741   0.1637   0.1840
+## Balanced Accuracy      1.0000   0.9998   0.9984   0.9983   0.9998</code></pre>
+<p>Thus we can see that the out of sample error also comes to about 0.01% which proves the fact that the model is capable of making very accurate predictions.</p>
+</div>
 
 
 
